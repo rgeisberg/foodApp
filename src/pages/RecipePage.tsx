@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getRecipeById, listRecipeIngredients } from "../features/recipes/api";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  addRecipeFavorite,
+  deleteRecipe,
+  getRecipeById,
+  isRecipeFavorited,
+  listRecipeIngredients,
+  removeRecipeFavorite,
+} from "../features/recipes/api";
 import { useAuth } from "../lib/auth";
 import type { Recipe, RecipeIngredient } from "../types/recipe";
 
 export function RecipePage() {
   const { recipeId } = useParams();
+  const navigate = useNavigate();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -20,20 +31,26 @@ export function RecipePage() {
     if (!isAuthenticated || !recipeId) {
       setRecipe(null);
       setIngredients([]);
+      setIsFavorited(false);
       setIsLoading(false);
       return;
     }
 
     let isMounted = true;
 
-    void Promise.all([getRecipeById(recipeId), listRecipeIngredients(recipeId)])
-      .then(([recipeData, ingredientData]) => {
+    void Promise.all([
+      getRecipeById(recipeId),
+      listRecipeIngredients(recipeId),
+      isRecipeFavorited(recipeId),
+    ])
+      .then(([recipeData, ingredientData, favorited]) => {
         if (!isMounted) {
           return;
         }
 
         setRecipe(recipeData);
         setIngredients(ingredientData);
+        setIsFavorited(favorited);
         setErrorMessage(null);
       })
       .catch((error: { message?: string }) => {
@@ -58,6 +75,54 @@ export function RecipePage() {
     .split("\n")
     .map((step) => step.trim())
     .filter(Boolean);
+
+  async function handleFavoriteToggle() {
+    if (!recipe) {
+      return;
+    }
+
+    setIsFavoriteLoading(true);
+    setErrorMessage(null);
+
+    try {
+      if (isFavorited) {
+        await removeRecipeFavorite(recipe.id);
+        setIsFavorited(false);
+      } else {
+        await addRecipeFavorite(recipe.id);
+        setIsFavorited(true);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to update favorite.";
+      setErrorMessage(message);
+    } finally {
+      setIsFavoriteLoading(false);
+    }
+  }
+
+  async function handleDeleteRecipe() {
+    if (!recipe) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete "${recipe.title}"? This cannot be undone.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeleteLoading(true);
+    setErrorMessage(null);
+
+    try {
+      await deleteRecipe(recipe.id, recipe.imageUrl ?? null);
+      navigate("/", { replace: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete recipe.";
+      setErrorMessage(message);
+      setIsDeleteLoading(false);
+    }
+  }
 
   if (isAuthLoading || isLoading) {
     return (
@@ -101,12 +166,36 @@ export function RecipePage() {
           <p className="recipe-meta">{recipe.category ?? "Uncategorized"}</p>
           <h2>{recipe.title}</h2>
         </div>
-        <button className="button-secondary" type="button">
-          Favorite
-        </button>
+        <div className="detail-actions">
+          <Link to={`/recipes/${recipe.id}/edit`} className="button-secondary">
+            Edit Recipe
+          </Link>
+          <button
+            className="button-secondary danger-button"
+            type="button"
+            onClick={() => void handleDeleteRecipe()}
+            disabled={isDeleteLoading}
+          >
+            {isDeleteLoading ? "Deleting..." : "Delete Recipe"}
+          </button>
+          <button
+            className={isFavorited ? "button-secondary active-pill" : "button-secondary"}
+            type="button"
+            onClick={() => void handleFavoriteToggle()}
+            disabled={isFavoriteLoading}
+          >
+            {isFavoriteLoading ? "Saving..." : isFavorited ? "Favorited" : "Favorite"}
+          </button>
+        </div>
       </div>
 
+      {recipe.imageUrl ? (
+        <img src={recipe.imageUrl} alt={recipe.title} className="recipe-detail-image" />
+      ) : null}
+
       <p>{recipe.description ?? "No description yet."}</p>
+
+      {errorMessage ? <p className="status-message error">{errorMessage}</p> : null}
 
       <div className="detail-grid">
         <div className="meta-block">

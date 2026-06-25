@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listRecipes } from "../features/recipes/api";
+import { searchRecipes } from "../features/recipes/api";
 import { useAuth } from "../lib/auth";
 import type { Recipe } from "../types/recipe";
 
 export function HomePage() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -22,8 +23,9 @@ export function HomePage() {
     }
 
     let isMounted = true;
+    setIsLoading(true);
 
-    void listRecipes()
+    void searchRecipes(searchTerm)
       .then((data) => {
         if (!isMounted) {
           return;
@@ -48,7 +50,7 @@ export function HomePage() {
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, isAuthLoading]);
+  }, [isAuthenticated, isAuthLoading, searchTerm]);
 
   return (
     <section className="stack">
@@ -64,9 +66,21 @@ export function HomePage() {
 
       <section className="panel">
         <div className="panel-header">
-          <h3>Recipe Library</h3>
-          <p className="muted">Shared recipes available to signed-in family members.</p>
+          <div>
+            <h3>Recipe Library</h3>
+            <p className="muted">Search title, category, description, instructions, or ingredients.</p>
+          </div>
         </div>
+
+        <label className="search-field">
+          Search
+          <input
+            type="text"
+            placeholder="Try fish, pasta, soup, blueberry..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </label>
 
         {isAuthLoading || isLoading ? <p className="muted">Loading recipes...</p> : null}
 
@@ -77,13 +91,20 @@ export function HomePage() {
         {errorMessage ? <p className="status-message error">{errorMessage}</p> : null}
 
         {!isLoading && isAuthenticated && !errorMessage && recipes.length === 0 ? (
-          <p className="muted">No recipes yet. Add the first one from the Add Recipe page.</p>
+          <p className="muted">
+            {searchTerm.trim()
+              ? "No recipes matched that search."
+              : "No recipes yet. Add the first one from the Add Recipe page."}
+          </p>
         ) : null}
 
         {recipes.length > 0 ? (
           <div className="recipe-grid">
             {recipes.map((recipe) => (
               <article key={recipe.id} className="recipe-card">
+                {recipe.imageUrl ? (
+                  <img src={recipe.imageUrl} alt={recipe.title} className="recipe-image" />
+                ) : null}
                 <p className="recipe-meta">{recipe.category ?? "Uncategorized"}</p>
                 <h4>{recipe.title}</h4>
                 <p className="muted">{recipe.description ?? "No description yet."}</p>

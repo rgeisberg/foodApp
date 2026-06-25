@@ -35,6 +35,10 @@ create table if not exists public.recipe_favorites (
   primary key (user_id, recipe_id)
 );
 
+insert into storage.buckets (id, name, public)
+values ('recipe-images', 'recipe-images', true)
+on conflict (id) do update set public = true;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -105,19 +109,19 @@ create policy "authenticated users can create recipes"
   with check (auth.uid() = created_by);
 
 drop policy if exists "users can update their own recipes" on public.recipes;
-create policy "users can update their own recipes"
+create policy "authenticated users can update all recipes"
   on public.recipes
   for update
   to authenticated
-  using (auth.uid() = created_by)
-  with check (auth.uid() = created_by);
+  using (true)
+  with check (true);
 
 drop policy if exists "users can delete their own recipes" on public.recipes;
-create policy "users can delete their own recipes"
+create policy "authenticated users can delete all recipes"
   on public.recipes
   for delete
   to authenticated
-  using (auth.uid() = created_by);
+  using (true);
 
 drop policy if exists "ingredients follow readable recipes" on public.recipe_ingredients;
 create policy "ingredients follow readable recipes"
@@ -133,54 +137,26 @@ create policy "ingredients follow readable recipes"
   );
 
 drop policy if exists "ingredient insert allowed for owned recipes" on public.recipe_ingredients;
-create policy "ingredient insert allowed for owned recipes"
+create policy "ingredient insert allowed for authenticated users"
   on public.recipe_ingredients
   for insert
   to authenticated
-  with check (
-    exists (
-      select 1
-      from public.recipes
-      where recipes.id = recipe_ingredients.recipe_id
-        and recipes.created_by = auth.uid()
-    )
-  );
+  with check (true);
 
 drop policy if exists "ingredient update allowed for owned recipes" on public.recipe_ingredients;
-create policy "ingredient update allowed for owned recipes"
+create policy "ingredient update allowed for authenticated users"
   on public.recipe_ingredients
   for update
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.recipes
-      where recipes.id = recipe_ingredients.recipe_id
-        and recipes.created_by = auth.uid()
-    )
-  )
-  with check (
-    exists (
-      select 1
-      from public.recipes
-      where recipes.id = recipe_ingredients.recipe_id
-        and recipes.created_by = auth.uid()
-    )
-  );
+  using (true)
+  with check (true);
 
 drop policy if exists "ingredient delete allowed for owned recipes" on public.recipe_ingredients;
-create policy "ingredient delete allowed for owned recipes"
+create policy "ingredient delete allowed for authenticated users"
   on public.recipe_ingredients
   for delete
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.recipes
-      where recipes.id = recipe_ingredients.recipe_id
-        and recipes.created_by = auth.uid()
-    )
-  );
+  using (true);
 
 drop policy if exists "users can read their own favorites" on public.recipe_favorites;
 create policy "users can read their own favorites"
@@ -202,3 +178,32 @@ create policy "users can delete their own favorites"
   for delete
   to authenticated
   using (auth.uid() = user_id);
+
+drop policy if exists "public can view recipe images" on storage.objects;
+create policy "public can view recipe images"
+  on storage.objects
+  for select
+  to public
+  using (bucket_id = 'recipe-images');
+
+drop policy if exists "authenticated users can upload recipe images" on storage.objects;
+create policy "authenticated users can upload recipe images"
+  on storage.objects
+  for insert
+  to authenticated
+  with check (bucket_id = 'recipe-images');
+
+drop policy if exists "authenticated users can update recipe images" on storage.objects;
+create policy "authenticated users can update recipe images"
+  on storage.objects
+  for update
+  to authenticated
+  using (bucket_id = 'recipe-images')
+  with check (bucket_id = 'recipe-images');
+
+drop policy if exists "authenticated users can delete recipe images" on storage.objects;
+create policy "authenticated users can delete recipe images"
+  on storage.objects
+  for delete
+  to authenticated
+  using (bucket_id = 'recipe-images');
