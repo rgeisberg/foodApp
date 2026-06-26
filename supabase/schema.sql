@@ -10,14 +10,31 @@ create table if not exists public.recipes (
   category text,
   description text,
   instructions text not null,
+  source text,
+  source_url text,
+  notes text,
+  have_i_made_it_before boolean not null default false,
+  frequently_made boolean not null default false,
+  times_made integer not null default 0,
+  last_made_at timestamptz,
   prep_time integer,
   cook_time integer,
+  total_time integer,
   servings integer,
   image_url text,
   created_by uuid not null references public.profiles (id) on delete cascade,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.recipes add column if not exists total_time integer;
+alter table public.recipes add column if not exists source text;
+alter table public.recipes add column if not exists source_url text;
+alter table public.recipes add column if not exists notes text;
+alter table public.recipes add column if not exists have_i_made_it_before boolean not null default false;
+alter table public.recipes add column if not exists frequently_made boolean not null default false;
+alter table public.recipes add column if not exists times_made integer not null default 0;
+alter table public.recipes add column if not exists last_made_at timestamptz;
 
 create table if not exists public.recipe_ingredients (
   id uuid primary key default gen_random_uuid(),
@@ -33,6 +50,13 @@ create table if not exists public.recipe_favorites (
   recipe_id uuid not null references public.recipes (id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (user_id, recipe_id)
+);
+
+create table if not exists public.recipe_make_log (
+  id uuid primary key default gen_random_uuid(),
+  recipe_id uuid not null references public.recipes (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  made_at timestamptz not null default now()
 );
 
 insert into storage.buckets (id, name, public)
@@ -78,6 +102,7 @@ alter table public.profiles enable row level security;
 alter table public.recipes enable row level security;
 alter table public.recipe_ingredients enable row level security;
 alter table public.recipe_favorites enable row level security;
+alter table public.recipe_make_log enable row level security;
 
 drop policy if exists "profiles are readable by authenticated users" on public.profiles;
 create policy "profiles are readable by authenticated users"
@@ -178,6 +203,20 @@ create policy "users can delete their own favorites"
   for delete
   to authenticated
   using (auth.uid() = user_id);
+
+drop policy if exists "users can read make log" on public.recipe_make_log;
+create policy "users can read make log"
+  on public.recipe_make_log
+  for select
+  to authenticated
+  using (true);
+
+drop policy if exists "users can create make log entries" on public.recipe_make_log;
+create policy "users can create make log entries"
+  on public.recipe_make_log
+  for insert
+  to authenticated
+  with check (auth.uid() = user_id);
 
 drop policy if exists "public can view recipe images" on storage.objects;
 create policy "public can view recipe images"

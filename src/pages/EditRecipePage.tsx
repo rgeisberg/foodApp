@@ -27,6 +27,7 @@ export function EditRecipePage() {
   const [instructions, setInstructions] = useState("");
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
+  const [totalTime, setTotalTime] = useState("");
   const [servings, setServings] = useState("");
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -56,6 +57,7 @@ export function EditRecipePage() {
         setInstructions(recipe.instructions);
         setPrepTime(recipe.prepTime?.toString() ?? "");
         setCookTime(recipe.cookTime?.toString() ?? "");
+        setTotalTime(recipe.totalTime?.toString() ?? "");
         setServings(recipe.servings?.toString() ?? "");
         setExistingImageUrl(recipe.imageUrl ?? null);
         setIngredients(
@@ -132,6 +134,7 @@ export function EditRecipePage() {
         instructions: instructions.trim(),
         prepTime: prepTime ? Number(prepTime) : null,
         cookTime: cookTime ? Number(cookTime) : null,
+        totalTime: totalTime ? Number(totalTime) : null,
         servings: servings ? Number(servings) : null,
         imageFile,
         existingImageUrl,
@@ -219,6 +222,17 @@ export function EditRecipePage() {
             placeholder="6"
             value={servings}
             onChange={(event) => setServings(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Total Time (minutes)
+          <input
+            type="number"
+            min="0"
+            placeholder="55"
+            value={totalTime}
+            onChange={(event) => setTotalTime(event.target.value)}
           />
         </label>
 

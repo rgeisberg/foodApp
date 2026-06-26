@@ -4,6 +4,7 @@ import { useAuth } from "../lib/auth";
 const navItems = [
   { to: "/", label: "Recipes" },
   { to: "/favorites", label: "Favorites" },
+  { to: "/made-history", label: "Made History" },
   { to: "/recipes/new", label: "Add Recipe" },
   { to: "/login", label: "Login" },
 ];

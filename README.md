@@ -65,3 +65,48 @@ After that, the login page can create accounts and sign users in.
 3. Connect favorites to `recipe_favorites`
 4. Add image upload storage
 5. Add search and filters
+
+## NYT Cooking Import
+
+The repo now includes a manual-browser ingestion pipeline for recipe import from your own NYT Cooking subscription session.
+
+What it does:
+
+- you open a NYT recipe in your normal logged-in browser
+- you run a small extractor from [scripts/nyt/browser-extractor.js](./scripts/nyt/browser-extractor.js)
+  or the bookmarklet in [scripts/nyt/bookmarklet.txt](./scripts/nyt/bookmarklet.txt)
+- the page downloads a structured `.json` recipe file
+- you move that file into `data/nyt/json/`
+- `npm run nyt:export` converts all saved JSON files into:
+  - `data/nyt/csv/recipes.csv`
+  - `data/nyt/csv/recipe_ingredients.csv`
+
+Why this approach:
+
+- NYT bot detection can block automated login/navigation
+- the browser extractor uses recipe data already delivered to your logged-in browser
+- the structured page data is much more reliable than PDF parsing for ingredients and search
+
+Manual workflow:
+
+1. Open a NYT Cooking recipe page in your normal browser while logged in
+2. Open DevTools Console
+3. Paste the contents of [scripts/nyt/browser-extractor.js](./scripts/nyt/browser-extractor.js)
+4. Press Enter
+5. A `.json` file should download
+6. Move that file into `data/nyt/json/`
+7. Repeat for more recipes
+8. Run:
+
+```bash
+npm run nyt:export
+```
+
+Optional PDF archive:
+
+- Use the browser print dialog and save PDFs manually into `data/nyt/pdfs/`
+
+Supabase import:
+
+- use [supabase/nyt_import_template.sql](./supabase/nyt_import_template.sql) as a staging/import template
+- replace `YOUR_USER_UUID_HERE` with the auth user id that should own the imported recipes

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "nyt:export": "node scripts/nyt/export-csv.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.54.0",

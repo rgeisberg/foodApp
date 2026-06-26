@@ -4,6 +4,7 @@ import { EditRecipePage } from "../pages/EditRecipePage";
 import { FavoritesPage } from "../pages/FavoritesPage";
 import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
+import { MadeHistoryPage } from "../pages/MadeHistoryPage";
 import { NewRecipePage } from "../pages/NewRecipePage";
 import { RecipePage } from "../pages/RecipePage";
 
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
       {
         path: "favorites",
         element: <FavoritesPage />,
+      },
+      {
+        path: "made-history",
+        element: <MadeHistoryPage />,
       },
       {
         path: "login",

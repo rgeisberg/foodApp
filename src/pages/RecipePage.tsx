@@ -203,6 +203,7 @@ export function RecipePage() {
           <ul className="simple-list">
             <li>Prep time: {recipe.prepTime ? `${recipe.prepTime} min` : "Not set"}</li>
             <li>Cook time: {recipe.cookTime ? `${recipe.cookTime} min` : "Not set"}</li>
+            <li>Total time: {recipe.totalTime ? `${recipe.totalTime} min` : "Not set"}</li>
             <li>Servings: {recipe.servings ?? "Not set"}</li>
           </ul>
         </div>

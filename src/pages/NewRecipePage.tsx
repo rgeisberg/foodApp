@@ -26,6 +26,7 @@ export function NewRecipePage() {
   const [instructions, setInstructions] = useState("");
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
+  const [totalTime, setTotalTime] = useState("");
   const [servings, setServings] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [ingredients, setIngredients] = useState<IngredientFormRow[]>([createEmptyIngredientRow()]);
@@ -75,6 +76,7 @@ export function NewRecipePage() {
         instructions: instructions.trim(),
         prepTime: prepTime ? Number(prepTime) : null,
         cookTime: cookTime ? Number(cookTime) : null,
+        totalTime: totalTime ? Number(totalTime) : null,
         servings: servings ? Number(servings) : null,
         imageFile,
         ingredients,
@@ -149,6 +151,17 @@ export function NewRecipePage() {
             placeholder="6"
             value={servings}
             onChange={(event) => setServings(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Total Time (minutes)
+          <input
+            type="number"
+            min="0"
+            placeholder="55"
+            value={totalTime}
+            onChange={(event) => setTotalTime(event.target.value)}
           />
         </label>
 
