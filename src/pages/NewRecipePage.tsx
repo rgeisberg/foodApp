@@ -24,6 +24,12 @@ export function NewRecipePage() {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [source, setSource] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [haveIMadeItBefore, setHaveIMadeItBefore] = useState(false);
+  const [frequentlyMade, setFrequentlyMade] = useState(false);
+  const [timesMade, setTimesMade] = useState("0");
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
   const [totalTime, setTotalTime] = useState("");
@@ -74,6 +80,12 @@ export function NewRecipePage() {
         category: category.trim(),
         description: description.trim(),
         instructions: instructions.trim(),
+        source: source.trim(),
+        sourceUrl: sourceUrl.trim(),
+        notes: notes.trim(),
+        haveIMadeItBefore,
+        frequentlyMade,
+        timesMade: timesMade ? Number(timesMade) : 0,
         prepTime: prepTime ? Number(prepTime) : null,
         cookTime: cookTime ? Number(cookTime) : null,
         totalTime: totalTime ? Number(totalTime) : null,
@@ -122,6 +134,26 @@ export function NewRecipePage() {
         </label>
 
         <label>
+          Source
+          <input
+            type="text"
+            placeholder="NYT"
+            value={source}
+            onChange={(event) => setSource(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Source URL
+          <input
+            type="url"
+            placeholder="https://..."
+            value={sourceUrl}
+            onChange={(event) => setSourceUrl(event.target.value)}
+          />
+        </label>
+
+        <label>
           Prep Time (minutes)
           <input
             type="number"
@@ -166,6 +198,17 @@ export function NewRecipePage() {
         </label>
 
         <label>
+          Times Made
+          <input
+            type="number"
+            min="0"
+            placeholder="0"
+            value={timesMade}
+            onChange={(event) => setTimesMade(event.target.value)}
+          />
+        </label>
+
+        <label>
           Recipe Image
           <input
             type="file"
@@ -175,6 +218,24 @@ export function NewRecipePage() {
           />
         </label>
 
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={haveIMadeItBefore}
+            onChange={(event) => setHaveIMadeItBefore(event.target.checked)}
+          />
+          Have I made it before?
+        </label>
+
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={frequentlyMade}
+            onChange={(event) => setFrequentlyMade(event.target.checked)}
+          />
+          Frequently made
+        </label>
+
         <label className="full-width">
           Description
           <textarea
@@ -182,6 +243,16 @@ export function NewRecipePage() {
             placeholder="Short summary of the recipe"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
+          />
+        </label>
+
+        <label className="full-width">
+          Notes
+          <textarea
+            rows={4}
+            placeholder="Family notes, substitutions, reminders..."
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
           />
         </label>
 

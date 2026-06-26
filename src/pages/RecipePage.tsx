@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   addRecipeFavorite,
-  deleteRecipe,
   getRecipeById,
   isRecipeFavorited,
   listRecipeIngredients,
+  markRecipeMade,
   removeRecipeFavorite,
 } from "../features/recipes/api";
 import { useAuth } from "../lib/auth";
@@ -19,7 +19,7 @@ export function RecipePage() {
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
-  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [isMarkingMade, setIsMarkingMade] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -100,27 +100,22 @@ export function RecipePage() {
     }
   }
 
-  async function handleDeleteRecipe() {
+  async function handleMarkRecipeMade() {
     if (!recipe) {
       return;
     }
 
-    const confirmed = window.confirm(`Delete "${recipe.title}"? This cannot be undone.`);
-
-    if (!confirmed) {
-      return;
-    }
-
-    setIsDeleteLoading(true);
+    setIsMarkingMade(true);
     setErrorMessage(null);
 
     try {
-      await deleteRecipe(recipe.id, recipe.imageUrl ?? null);
-      navigate("/", { replace: true });
+      const updatedRecipe = await markRecipeMade(recipe.id);
+      setRecipe(updatedRecipe);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to delete recipe.";
+      const message = error instanceof Error ? error.message : "Unable to log recipe.";
       setErrorMessage(message);
-      setIsDeleteLoading(false);
+    } finally {
+      setIsMarkingMade(false);
     }
   }
 
@@ -165,18 +160,26 @@ export function RecipePage() {
         <div>
           <p className="recipe-meta">{recipe.category ?? "Uncategorized"}</p>
           <h2>{recipe.title}</h2>
+          {recipe.source ? <p className="muted">Source: {recipe.source}</p> : null}
+          {recipe.sourceUrl ? (
+            <p className="muted">
+              <a href={recipe.sourceUrl} target="_blank" rel="noreferrer" className="recipe-link">
+                Recipe Link
+              </a>
+            </p>
+          ) : null}
         </div>
         <div className="detail-actions">
           <Link to={`/recipes/${recipe.id}/edit`} className="button-secondary">
             Edit Recipe
           </Link>
           <button
-            className="button-secondary danger-button"
+            className="button-secondary"
             type="button"
-            onClick={() => void handleDeleteRecipe()}
-            disabled={isDeleteLoading}
+            onClick={() => void handleMarkRecipeMade()}
+            disabled={isMarkingMade}
           >
-            {isDeleteLoading ? "Deleting..." : "Delete Recipe"}
+            {isMarkingMade ? "Logging..." : "Making This Recipe"}
           </button>
           <button
             className={isFavorited ? "button-secondary active-pill" : "button-secondary"}
@@ -205,9 +208,22 @@ export function RecipePage() {
             <li>Cook time: {recipe.cookTime ? `${recipe.cookTime} min` : "Not set"}</li>
             <li>Total time: {recipe.totalTime ? `${recipe.totalTime} min` : "Not set"}</li>
             <li>Servings: {recipe.servings ?? "Not set"}</li>
+            <li>Made before: {recipe.haveIMadeItBefore ? "Yes" : "No"}</li>
+            <li>Frequently made: {recipe.frequentlyMade ? "Yes" : "No"}</li>
+            <li>Times made: {recipe.timesMade}</li>
+            <li>
+              Last made: {recipe.lastMadeAt ? new Date(recipe.lastMadeAt).toLocaleString() : "Not set"}
+            </li>
           </ul>
         </div>
       </div>
+
+      {recipe.notes ? (
+        <section className="panel inset-panel">
+          <h3>Notes</h3>
+          <p>{recipe.notes}</p>
+        </section>
+      ) : null}
 
       <div className="detail-grid">
         <div>

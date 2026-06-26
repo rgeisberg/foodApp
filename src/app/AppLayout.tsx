@@ -4,24 +4,27 @@ import { useAuth } from "../lib/auth";
 const navItems = [
   { to: "/", label: "Recipes" },
   { to: "/favorites", label: "Favorites" },
+  { to: "/frequently-made", label: "Frequently Made" },
   { to: "/made-history", label: "Made History" },
   { to: "/recipes/new", label: "Add Recipe" },
-  { to: "/login", label: "Login" },
 ];
 
 export function AppLayout() {
-  const { isAuthenticated, isLoading, signOut, userEmail } = useAuth();
+  const { isAuthenticated, isLoading, signOut, userDisplayName } = useAuth();
+  const visibleNavItems = isAuthenticated
+    ? navItems
+    : [...navItems, { to: "/login", label: "Login" }];
 
   return (
     <div className="shell">
       <header className="topbar">
         <div>
           <p className="eyebrow">Family Cookbook</p>
-          <h1>Food App</h1>
+          <h1>Geisberg Recipes</h1>
         </div>
         <div className="header-actions">
           <nav className="nav">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -37,7 +40,7 @@ export function AppLayout() {
               <span>Checking session...</span>
             ) : isAuthenticated ? (
               <>
-                <span>{userEmail}</span>
+                <span>Hello {userDisplayName}</span>
                 <button className="button-secondary" type="button" onClick={() => void signOut()}>
                   Sign Out
                 </button>

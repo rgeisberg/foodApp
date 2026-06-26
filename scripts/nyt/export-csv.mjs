@@ -51,6 +51,7 @@ async function main() {
   const recipeRows = recipes.map((recipe) => ({
     import_key: recipe.recipeKey,
     source_url: recipe.sourceUrl,
+    source: "NYT",
     title: recipe.title,
     category: recipe.category ?? "",
     description: recipe.description ?? "",
@@ -81,6 +82,7 @@ async function main() {
     [
       "import_key",
       "source_url",
+      "source",
       "title",
       "category",
       "description",

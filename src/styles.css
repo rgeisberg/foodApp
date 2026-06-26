@@ -1,9 +1,24 @@
 :root {
   font-family: "Avenir Next", "Segoe UI", sans-serif;
-  color: #1f2937;
+  color: #223127;
+  --bg-top-glow: rgba(190, 223, 188, 0.52);
+  --bg-bottom-glow: rgba(220, 240, 214, 0.88);
+  --surface: rgba(248, 253, 246, 0.9);
+  --surface-strong: rgba(243, 250, 239, 0.96);
+  --surface-soft: rgba(236, 246, 231, 0.82);
+  --border: rgba(84, 124, 86, 0.16);
+  --border-strong: rgba(84, 124, 86, 0.28);
+  --text-main: #223127;
+  --text-soft: #58705d;
+  --accent: #6fa06d;
+  --accent-strong: #4e8152;
+  --accent-soft: #e3f1de;
+  --danger-bg: #f8ece8;
+  --danger-border: #d8b2aa;
+  --danger-text: #9d3d2d;
   background:
-    radial-gradient(circle at top left, rgba(238, 205, 138, 0.35), transparent 30%),
-    linear-gradient(180deg, #f8f4ea 0%, #f2ece2 100%);
+    radial-gradient(circle at top left, var(--bg-top-glow), transparent 30%),
+    linear-gradient(180deg, #f5fbf1 0%, var(--bg-bottom-glow) 100%);
   line-height: 1.5;
   font-weight: 400;
 }
@@ -32,8 +47,8 @@ textarea {
 button {
   border: 0;
   border-radius: 999px;
-  background: #c56b2d;
-  color: #fffdf8;
+  background: var(--accent);
+  color: #f8fff6;
   cursor: pointer;
   padding: 0.8rem 1.2rem;
 }
@@ -46,11 +61,17 @@ button:disabled {
 input,
 textarea {
   width: 100%;
-  border: 1px solid #d9cdbd;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: rgba(255, 252, 247, 0.95);
+  background: rgba(252, 255, 250, 0.98);
   padding: 0.85rem 1rem;
   margin-top: 0.4rem;
+  color: var(--text-main);
+}
+
+input[type="checkbox"] {
+  width: auto;
+  margin-top: 0;
 }
 
 #root {
@@ -95,13 +116,14 @@ textarea {
 .nav-link {
   padding: 0.7rem 1rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(197, 107, 45, 0.12);
+  background: rgba(252, 255, 250, 0.72);
+  border: 1px solid var(--border);
 }
 
 .nav-link.active {
-  background: #fff8ef;
-  border-color: #c56b2d;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .content,
@@ -113,10 +135,10 @@ textarea {
 .hero-card,
 .panel,
 .recipe-card {
-  border: 1px solid rgba(117, 88, 56, 0.12);
-  background: rgba(255, 250, 243, 0.88);
+  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: 24px;
-  box-shadow: 0 18px 40px rgba(94, 71, 42, 0.08);
+  box-shadow: 0 18px 40px rgba(73, 101, 74, 0.1);
 }
 
 .hero-card,
@@ -131,17 +153,21 @@ textarea {
   gap: 1rem;
 }
 
+.inset-panel {
+  padding: 1.25rem;
+}
+
 .eyebrow,
 .recipe-meta {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
-  color: #8b5b34;
+  color: var(--accent-strong);
   margin: 0 0 0.35rem;
 }
 
 .muted {
-  color: #6b7280;
+  color: var(--text-soft);
 }
 
 .recipe-grid {
@@ -154,12 +180,16 @@ textarea {
   padding: 1.25rem;
 }
 
+.recipe-image-link {
+  display: block;
+}
+
 .recipe-image,
 .recipe-detail-image {
   width: 100%;
   object-fit: cover;
   border-radius: 18px;
-  border: 1px solid rgba(117, 88, 56, 0.12);
+  border: 1px solid var(--border);
 }
 
 .recipe-image {
@@ -178,15 +208,20 @@ textarea {
   justify-content: center;
   padding: 0.7rem 1rem;
   border-radius: 999px;
-  background: #fff5ea;
-  border: 1px solid #d9cdbd;
-  color: #7b4c24;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-strong);
+  color: var(--accent-strong);
+}
+
+.recipe-link {
+  font-weight: 700;
+  color: var(--accent-strong);
 }
 
 .danger-button {
-  border-color: #d5b0aa;
-  background: #fff1ef;
-  color: #9d3d2d;
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
 .detail-actions {
@@ -206,20 +241,26 @@ textarea {
   align-items: center;
   padding: 0.7rem 0.9rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(197, 107, 45, 0.12);
-  color: #7b4c24;
+  background: rgba(252, 255, 250, 0.8);
+  border: 1px solid var(--border);
+  color: var(--accent-strong);
   flex-wrap: wrap;
 }
 
 .toggle-row {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.library-filters {
+  margin: 1rem 0 1.5rem;
 }
 
 .active-pill {
-  border-color: #c56b2d;
-  background: #fff2e1;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 
 .status-message {
@@ -229,13 +270,13 @@ textarea {
 }
 
 .status-message.success {
-  background: #eef8f0;
-  color: #25643b;
+  background: #ebf7e8;
+  color: #2d6740;
 }
 
 .status-message.error {
-  background: #fff0ee;
-  color: #9d3d2d;
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
 .detail-grid {
@@ -260,8 +301,8 @@ textarea {
   gap: 1rem;
   padding: 1.25rem;
   border-radius: 22px;
-  border: 1px solid rgba(117, 88, 56, 0.12);
-  background: rgba(255, 248, 239, 0.7);
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
 }
 
 .ingredient-header {
@@ -298,6 +339,47 @@ textarea {
 .actions {
   display: flex;
   justify-content: flex-end;
+  gap: 1rem;
+}
+
+.checkbox-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding-top: 1.8rem;
+}
+
+
+.history-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.history-card {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.history-image {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.history-content {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.history-content h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 .narrow {
@@ -321,6 +403,10 @@ textarea {
   }
 
   .ingredient-row {
+    grid-template-columns: 1fr;
+  }
+
+  .history-card {
     grid-template-columns: 1fr;
   }
 }

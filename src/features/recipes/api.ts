@@ -2,6 +2,21 @@ import { supabase } from "../../lib/supabase";
 import type { Recipe, RecipeIngredient, RecipeMakeLogEntry } from "../../types/recipe";
 
 const RECIPE_IMAGE_BUCKET = "recipe-images";
+const FREQUENTLY_MADE_THRESHOLD = 6;
+function isExcludedChickenSearchIngredient(ingredient: string) {
+  const normalizedIngredient = ingredient.toLowerCase();
+
+  return (
+    normalizedIngredient.includes("chicken broth") ||
+    normalizedIngredient.includes("chicken stock") ||
+    (normalizedIngredient.includes("chicken") &&
+      (normalizedIngredient.includes("broth") || normalizedIngredient.includes("stock")))
+  );
+}
+
+function isExcludedVegetableSearchIngredient(ingredient: string) {
+  return ingredient.toLowerCase().includes("vegetable oil");
+}
 
 type RecipeRow = {
   id: string;
@@ -124,6 +139,10 @@ function getStoragePathFromPublicUrl(publicUrl: string) {
   }
 }
 
+function shouldMarkFrequentlyMade(timesMade: number, manuallyMarked: boolean) {
+  return manuallyMarked || timesMade >= FREQUENTLY_MADE_THRESHOLD;
+}
+
 export async function listRecipes() {
   const { data, error } = await supabase
     .from("recipes")
@@ -161,14 +180,29 @@ export async function searchRecipes(query: string) {
 
   return recipeRows
     .filter((row) => {
-      const ingredientsText = (row.recipe_ingredients ?? [])
-        .map((ingredientRow) => ingredientRow.ingredient.toLowerCase())
-        .join(" ");
+      const normalizedIngredients = (row.recipe_ingredients ?? []).map((ingredientRow) =>
+        ingredientRow.ingredient.toLowerCase(),
+      );
+
+      if (
+        normalizedQuery === "chicken" &&
+        normalizedIngredients.some((ingredient) => isExcludedChickenSearchIngredient(ingredient))
+      ) {
+        return false;
+      }
+
+      if (
+        normalizedQuery === "vegetable" &&
+        normalizedIngredients.some((ingredient) => isExcludedVegetableSearchIngredient(ingredient))
+      ) {
+        return false;
+      }
+
+      const ingredientsText = normalizedIngredients.join(" ");
 
       const haystack = [
         row.title,
         row.category ?? "",
-        row.description ?? "",
         row.instructions,
         row.notes ?? "",
         row.source ?? "",
@@ -324,6 +358,23 @@ export async function listFavoriteRecipes() {
     .filter((recipe): recipe is Recipe => recipe !== null);
 }
 
+export async function listFrequentlyMadeRecipes() {
+  const { data, error } = await supabase
+    .from("recipes")
+    .select(
+      "id, title, category, description, instructions, source, source_url, notes, have_i_made_it_before, frequently_made, times_made, last_made_at, prep_time, cook_time, total_time, servings, image_url, created_by, created_at, updated_at",
+    )
+    .eq("frequently_made", true)
+    .order("times_made", { ascending: false })
+    .order("title", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as RecipeRow[]).map(mapRecipe);
+}
+
 export async function listRecipeMakeHistory() {
   const { data, error } = await supabase
     .from("recipe_make_log")
@@ -351,6 +402,7 @@ type CreateRecipeInput = {
   notes: string;
   haveIMadeItBefore: boolean;
   frequentlyMade: boolean;
+  timesMade: number;
   prepTime: number | null;
   cookTime: number | null;
   totalTime: number | null;
@@ -374,6 +426,7 @@ type UpdateRecipeInput = {
   notes: string;
   haveIMadeItBefore: boolean;
   frequentlyMade: boolean;
+  timesMade: number;
   prepTime: number | null;
   cookTime: number | null;
   totalTime: number | null;
@@ -419,6 +472,8 @@ export async function createRecipe(input: CreateRecipeInput) {
     data: { publicUrl },
   } = supabase.storage.from(RECIPE_IMAGE_BUCKET).getPublicUrl(filePath);
 
+  const frequentlyMade = shouldMarkFrequentlyMade(input.timesMade, input.frequentlyMade);
+
   const { data, error } = await supabase
     .from("recipes")
     .insert({
@@ -430,7 +485,8 @@ export async function createRecipe(input: CreateRecipeInput) {
       source_url: input.sourceUrl || null,
       notes: input.notes || null,
       have_i_made_it_before: input.haveIMadeItBefore,
-      frequently_made: input.frequentlyMade,
+      frequently_made: frequentlyMade,
+      times_made: input.timesMade,
       prep_time: input.prepTime,
       cook_time: input.cookTime,
       total_time: input.totalTime,
@@ -508,6 +564,8 @@ export async function updateRecipe(input: UpdateRecipeInput) {
     imageUrl = publicUrl;
   }
 
+  const frequentlyMade = shouldMarkFrequentlyMade(input.timesMade, input.frequentlyMade);
+
   const { data, error } = await supabase
     .from("recipes")
     .update({
@@ -519,7 +577,8 @@ export async function updateRecipe(input: UpdateRecipeInput) {
       source_url: input.sourceUrl || null,
       notes: input.notes || null,
       have_i_made_it_before: input.haveIMadeItBefore,
-      frequently_made: input.frequentlyMade,
+      frequently_made: frequentlyMade,
+      times_made: input.timesMade,
       prep_time: input.prepTime,
       cook_time: input.cookTime,
       total_time: input.totalTime,
@@ -640,13 +699,15 @@ export async function markRecipeMade(recipeId: string) {
   }
 
   const current = mapRecipe(currentData as RecipeRow);
+  const nextTimesMade = current.timesMade + 1;
 
   const { data, error } = await supabase
     .from("recipes")
     .update({
       have_i_made_it_before: true,
+      frequently_made: shouldMarkFrequentlyMade(nextTimesMade, current.frequentlyMade),
       last_made_at: madeAt,
-      times_made: current.timesMade + 1,
+      times_made: nextTimesMade,
     })
     .eq("id", recipeId)
     .select(

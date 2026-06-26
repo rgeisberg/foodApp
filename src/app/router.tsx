@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./AppLayout";
 import { EditRecipePage } from "../pages/EditRecipePage";
 import { FavoritesPage } from "../pages/FavoritesPage";
+import { FrequentlyMadePage } from "../pages/FrequentlyMadePage";
 import { HomePage } from "../pages/HomePage";
 import { LoginPage } from "../pages/LoginPage";
 import { MadeHistoryPage } from "../pages/MadeHistoryPage";
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
       {
         path: "favorites",
         element: <FavoritesPage />,
+      },
+      {
+        path: "frequently-made",
+        element: <FrequentlyMadePage />,
       },
       {
         path: "made-history",

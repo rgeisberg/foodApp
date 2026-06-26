@@ -7,10 +7,41 @@ type AuthContextValue = {
   isLoading: boolean;
   session: Session | null;
   userEmail: string | null;
+  userDisplayName: string | null;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function getUserDisplayName(session: Session | null) {
+  const user = session?.user;
+
+  if (!user) {
+    return null;
+  }
+
+  const metadata = user.user_metadata;
+  const candidates = [
+    metadata?.display_name,
+    metadata?.full_name,
+    metadata?.name,
+    metadata?.preferred_username,
+  ];
+
+  const namedCandidate = candidates.find(
+    (value): value is string => typeof value === "string" && value.trim().length > 0,
+  );
+
+  if (namedCandidate) {
+    return namedCandidate.trim();
+  }
+
+  if (user.email) {
+    return user.email.split("@")[0];
+  }
+
+  return "there";
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -60,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         session,
         userEmail: session?.user.email ?? null,
+        userDisplayName: getUserDisplayName(session),
         signOut,
       }}
     >

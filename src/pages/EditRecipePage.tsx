@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getRecipeById, listRecipeIngredients, updateRecipe } from "../features/recipes/api";
+import {
+  deleteRecipe,
+  getRecipeById,
+  listRecipeIngredients,
+  updateRecipe,
+} from "../features/recipes/api";
 
 type IngredientFormRow = {
   id: string;
@@ -25,6 +30,12 @@ export function EditRecipePage() {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [source, setSource] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [haveIMadeItBefore, setHaveIMadeItBefore] = useState(false);
+  const [frequentlyMade, setFrequentlyMade] = useState(false);
+  const [timesMade, setTimesMade] = useState("0");
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
   const [totalTime, setTotalTime] = useState("");
@@ -34,6 +45,7 @@ export function EditRecipePage() {
   const [ingredients, setIngredients] = useState<IngredientFormRow[]>([createEmptyIngredientRow()]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +67,12 @@ export function EditRecipePage() {
         setCategory(recipe.category ?? "");
         setDescription(recipe.description ?? "");
         setInstructions(recipe.instructions);
+        setSource(recipe.source ?? "");
+        setSourceUrl(recipe.sourceUrl ?? "");
+        setNotes(recipe.notes ?? "");
+        setHaveIMadeItBefore(recipe.haveIMadeItBefore);
+        setFrequentlyMade(recipe.frequentlyMade);
+        setTimesMade(recipe.timesMade.toString());
         setPrepTime(recipe.prepTime?.toString() ?? "");
         setCookTime(recipe.cookTime?.toString() ?? "");
         setTotalTime(recipe.totalTime?.toString() ?? "");
@@ -132,6 +150,12 @@ export function EditRecipePage() {
         category: category.trim(),
         description: description.trim(),
         instructions: instructions.trim(),
+        source: source.trim(),
+        sourceUrl: sourceUrl.trim(),
+        notes: notes.trim(),
+        haveIMadeItBefore,
+        frequentlyMade,
+        timesMade: timesMade ? Number(timesMade) : 0,
         prepTime: prepTime ? Number(prepTime) : null,
         cookTime: cookTime ? Number(cookTime) : null,
         totalTime: totalTime ? Number(totalTime) : null,
@@ -146,6 +170,31 @@ export function EditRecipePage() {
       const message = error instanceof Error ? error.message : "Unable to update recipe.";
       setErrorMessage(message);
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteRecipe() {
+    if (!recipeId) {
+      setErrorMessage("Recipe ID is missing.");
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete "${title}"? This cannot be undone.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeleteLoading(true);
+    setErrorMessage(null);
+
+    try {
+      await deleteRecipe(recipeId, existingImageUrl);
+      navigate("/", { replace: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete recipe.";
+      setErrorMessage(message);
+      setIsDeleteLoading(false);
     }
   }
 
@@ -189,6 +238,26 @@ export function EditRecipePage() {
             placeholder="Dinner"
             value={category}
             onChange={(event) => setCategory(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Source
+          <input
+            type="text"
+            placeholder="NYT"
+            value={source}
+            onChange={(event) => setSource(event.target.value)}
+          />
+        </label>
+
+        <label>
+          Source URL
+          <input
+            type="url"
+            placeholder="https://..."
+            value={sourceUrl}
+            onChange={(event) => setSourceUrl(event.target.value)}
           />
         </label>
 
@@ -237,12 +306,41 @@ export function EditRecipePage() {
         </label>
 
         <label>
+          Times Made
+          <input
+            type="number"
+            min="0"
+            placeholder="0"
+            value={timesMade}
+            onChange={(event) => setTimesMade(event.target.value)}
+          />
+        </label>
+
+        <label>
           Replace Image
           <input
             type="file"
             accept="image/*"
             onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
           />
+        </label>
+
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={haveIMadeItBefore}
+            onChange={(event) => setHaveIMadeItBefore(event.target.checked)}
+          />
+          Have I made it before?
+        </label>
+
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={frequentlyMade}
+            onChange={(event) => setFrequentlyMade(event.target.checked)}
+          />
+          Frequently made
         </label>
 
         <label className="full-width">
@@ -252,6 +350,16 @@ export function EditRecipePage() {
             placeholder="Short summary of the recipe"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
+          />
+        </label>
+
+        <label className="full-width">
+          Notes
+          <textarea
+            rows={4}
+            placeholder="Family notes, substitutions, reminders..."
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
           />
         </label>
 
@@ -327,6 +435,14 @@ export function EditRecipePage() {
         {errorMessage ? <p className="status-message error">{errorMessage}</p> : null}
 
         <div className="full-width actions">
+          <button
+            className="button-secondary danger-button"
+            type="button"
+            onClick={() => void handleDeleteRecipe()}
+            disabled={isDeleteLoading || isSubmitting}
+          >
+            {isDeleteLoading ? "Deleting..." : "Delete Recipe"}
+          </button>
           <button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
