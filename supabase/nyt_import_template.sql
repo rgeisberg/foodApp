@@ -1,15 +1,25 @@
--- NYT Cooking CSV import template
+-- Recipe CSV import template for NYT / Epicurious exports
 --
 -- 1. Create staging tables.
--- 2. Import `data/nyt/csv/recipes.csv` into `public.nyt_recipe_import`.
--- 3. Import `data/nyt/csv/recipe_ingredients.csv` into `public.nyt_recipe_ingredient_import`.
+-- 2. Import either:
+--    - `data/nyt/csv/recipes.csv`
+--    - `data/nyt/csv/epic_recipes.csv`
+--    into `public.nyt_recipe_import`.
+-- 3. Import either:
+--    - `data/nyt/csv/recipe_ingredients.csv`
+--    - `data/nyt/csv/epic_recipe_ingredients.csv`
+--    into `public.nyt_recipe_ingredient_import`.
 -- 4. Replace `YOUR_USER_UUID_HERE` below with the auth user UUID that should own the imported recipes.
 -- 5. Run the insert statements.
+--
+-- Optional reset before each new import batch:
+-- truncate table public.nyt_recipe_ingredient_import;
+-- truncate table public.nyt_recipe_import;
 
 create table if not exists public.nyt_recipe_import (
   import_key text primary key,
   source_url text not null,
-  source text,
+  source text not null,
   title text not null,
   category text,
   description text,
@@ -74,6 +84,8 @@ select
 from public.nyt_recipe_import as source
 join public.recipes as target
   on target.title = source.title
+ and coalesce(target.source, '') = coalesce(source.source, '')
+ and coalesce(target.source_url, '') = coalesce(source.source_url, '')
  and coalesce(target.description, '') = coalesce(source.description, '')
  and target.instructions = source.instructions;
 

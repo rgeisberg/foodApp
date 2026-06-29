@@ -28,8 +28,20 @@ async function listJsonFilesRecursively(directory) {
   return files.sort((left, right) => left.localeCompare(right));
 }
 
-async function loadRecipes() {
-  const fileNames = await listJsonFilesRecursively(JSON_DIR);
+function parseCliOptions() {
+  const [sourceFolder = "", sourceName = "NYT", recipeFileName = "recipes.csv", ingredientFileName = "recipe_ingredients.csv"] =
+    process.argv.slice(2);
+
+  return {
+    sourceFolder,
+    sourceName,
+    recipeFileName,
+    ingredientFileName,
+  };
+}
+
+async function loadRecipes(jsonDirectory) {
+  const fileNames = await listJsonFilesRecursively(jsonDirectory);
   const recipes = [];
 
   for (const fileName of fileNames) {
@@ -42,16 +54,18 @@ async function loadRecipes() {
 
 async function main() {
   await ensureDirectories();
-  const recipes = await loadRecipes();
+  const { sourceFolder, sourceName, recipeFileName, ingredientFileName } = parseCliOptions();
+  const jsonDirectory = sourceFolder ? path.join(JSON_DIR, sourceFolder) : JSON_DIR;
+  const recipes = await loadRecipes(jsonDirectory);
 
   if (recipes.length === 0) {
-    throw new Error("No parsed recipe JSON files found in data/nyt/json");
+    throw new Error(`No parsed recipe JSON files found in ${path.relative(process.cwd(), jsonDirectory)}`);
   }
 
   const recipeRows = recipes.map((recipe) => ({
     import_key: recipe.recipeKey,
     source_url: recipe.sourceUrl,
-    source: "NYT",
+    source: sourceName,
     title: recipe.title,
     category: recipe.category ?? "",
     description: recipe.description ?? "",
@@ -101,10 +115,12 @@ async function main() {
     ingredientRows,
   );
 
-  await fs.writeFile(path.join(CSV_DIR, "recipes.csv"), recipesCsv, "utf8");
-  await fs.writeFile(path.join(CSV_DIR, "recipe_ingredients.csv"), ingredientsCsv, "utf8");
+  await fs.writeFile(path.join(CSV_DIR, recipeFileName), recipesCsv, "utf8");
+  await fs.writeFile(path.join(CSV_DIR, ingredientFileName), ingredientsCsv, "utf8");
 
-  console.log(`Exported ${recipeRows.length} recipes and ${ingredientRows.length} ingredients to data/nyt/csv`);
+  console.log(
+    `Exported ${recipeRows.length} recipes and ${ingredientRows.length} ingredients from ${path.relative(process.cwd(), jsonDirectory)} to ${path.relative(process.cwd(), CSV_DIR)}`,
+  );
 }
 
 main().catch((error) => {

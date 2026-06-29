@@ -142,8 +142,8 @@
     }
 
     const normalized = value.toLowerCase().trim();
-    const hourMatch = normalized.match(/(\d+)\s*hour/);
-    const minuteMatch = normalized.match(/(\d+)\s*minute/);
+    const hourMatch = normalized.match(/(\d+)\s*(?:hours?|hrs?|hr)\b/);
+    const minuteMatch = normalized.match(/(\d+)\s*(?:minutes?|mins?|min)\b/);
 
     if (hourMatch || minuteMatch) {
       const hours = hourMatch ? Number(hourMatch[1]) : 0;
@@ -151,12 +151,12 @@
       return hours * 60 + minutes;
     }
 
-    const rangeMatch = normalized.match(/(\d+)\s*(?:to|-)\s*(\d+)\s*minutes?/);
+    const rangeMatch = normalized.match(/(\d+)\s*(?:to|-)\s*(\d+)\s*(?:minutes?|mins?|min)\b/);
     if (rangeMatch) {
       return Number(rangeMatch[2]);
     }
 
-    const plainMinuteMatch = normalized.match(/(\d+)\s*minutes?/);
+    const plainMinuteMatch = normalized.match(/(\d+)\s*(?:minutes?|mins?|min)\b/);
     if (plainMinuteMatch) {
       return Number(plainMinuteMatch[1]);
     }
@@ -164,20 +164,61 @@
     return null;
   }
 
-  function fallbackTotalTimeFromPage() {
+  function fallbackTimeFromDefinitionList(labelMatcher) {
     const labels = Array.from(document.querySelectorAll("dt"));
     for (const label of labels) {
-      if (label.textContent && label.textContent.trim().toLowerCase() === "total time") {
+      const text = label.textContent && label.textContent.trim().toLowerCase();
+      if (text && labelMatcher(text)) {
         const valueNode = label.nextElementSibling;
         if (valueNode && valueNode.textContent) {
           return parseMinutesFromText(valueNode.textContent);
         }
       }
     }
+    return null;
+  }
 
+  function fallbackTimeFromRecipeInfoList(labelMatcher) {
+    const items = Array.from(document.querySelectorAll(".o-RecipeInfo__m-Time li"));
+    for (const item of items) {
+      const heading = item.querySelector(".o-RecipeInfo__a-Headline");
+      const description = item.querySelector(".o-RecipeInfo__a-Description");
+      const headingText = heading && heading.textContent ? heading.textContent.trim().toLowerCase() : "";
+      if (headingText && labelMatcher(headingText)) {
+        const valueText = description && description.textContent ? description.textContent : item.textContent;
+        return parseMinutesFromText(valueText);
+      }
+    }
+    return null;
+  }
+
+  function fallbackTimeFromBody(labelRegex) {
     const bodyText = document.body ? document.body.innerText : "";
-    const inlineMatch = bodyText.match(/Total Time\s+([^\n]+)/i);
+    const inlineMatch = bodyText.match(labelRegex);
     return inlineMatch ? parseMinutesFromText(inlineMatch[1]) : null;
+  }
+
+  function fallbackTimeFromPage(label) {
+    const normalizedLabel = label.toLowerCase();
+    const labelMatcher = (text) => text.replace(/:$/, "").trim() === normalizedLabel;
+
+    return (
+      fallbackTimeFromDefinitionList(labelMatcher) ||
+      fallbackTimeFromRecipeInfoList(labelMatcher) ||
+      fallbackTimeFromBody(new RegExp(`${label}\\s+([^\\n]+)`, "i"))
+    );
+  }
+
+  function fallbackTotalTimeFromPage() {
+    return fallbackTimeFromPage("Total");
+  }
+
+  function fallbackPrepTimeFromPage() {
+    return fallbackTimeFromPage("Prep");
+  }
+
+  function fallbackCookTimeFromPage() {
+    return fallbackTimeFromPage("Cook");
   }
 
   function fallbackImageFromPage() {
@@ -229,8 +270,8 @@
     description: typeof recipe.description === "string" ? recipe.description.trim() : "",
     category: normalizeCategory(recipe.recipeCategory),
     imageUrl: normalizeImage(recipe.image) || fallbackImageFromPage(),
-    prepTime: extractDurationMinutes(recipe.prepTime),
-    cookTime: extractDurationMinutes(recipe.cookTime),
+    prepTime: extractDurationMinutes(recipe.prepTime) || fallbackPrepTimeFromPage(),
+    cookTime: extractDurationMinutes(recipe.cookTime) || fallbackCookTimeFromPage(),
     totalTime: extractDurationMinutes(recipe.totalTime) || fallbackTotalTimeFromPage(),
     servings: extractServings(recipe.recipeYield),
     ingredients: Array.isArray(recipe.recipeIngredient)
